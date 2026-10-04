@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SourceLearn: From Knowledge Access to Source Learning</title>
+<meta name="description" content="SourceLearn develops reusable source-specific competence for LLM agents: a persistent, revisable source model learned from an authoritative source through self-directed and task-guided source learning." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          brand: {
+            50:  '#eef2ff',
+            100: '#e0e7ff',
+            200: '#c7d2fe',
+            300: '#a5b4fc',
+            400: '#818cf8',
+            500: '#4f46e5',
+            600: '#4338ca',
+            700: '#3730a3',
+            800: '#312e81',
+            900: '#1e1b4b',
+          },
+          accent: {
+            500: '#d97706',
+          },
+          ink: {
+            50:  '#f7f8fa',
+            100: '#eef0f4',
+            200: '#dbdfe7',
+            300: '#b6bccb',
+            400: '#7e859a',
+            500: '#525a72',
+            600: '#3a4156',
+            700: '#262b3c',
+            800: '#161a27',
+            900: '#0b0e17',
+          },
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body {
+    font-feature-settings: "ss01", "ss02", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .hero-bg {
+    background:
+      radial-gradient(60% 80% at 20% 0%, rgba(79,70,229,0.10), transparent 60%),
+      radial-gradient(50% 70% at 100% 10%, rgba(217,119,6,0.08), transparent 60%),
+      linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
+  }
+  .gradient-text {
+    background: linear-gradient(90deg, #312e81 0%, #4f46e5 45%, #d97706 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.15rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, color .15s ease;
+    border: 1px solid transparent;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: #161a27; color: #fff; }
+  .btn-primary:hover { background: #0b0e17; box-shadow: 0 10px 24px -12px rgba(11,14,23,.6); }
+  .btn-secondary { background: #fff; color: #161a27; border-color: #dbdfe7; }
+  .btn-secondary:hover { border-color: #b6bccb; box-shadow: 0 8px 22px -14px rgba(16,24,40,.25); }
+  .btn-brand { background: linear-gradient(180deg, #4f46e5 0%, #3730a3 100%); color: #fff; }
+  .btn-brand:hover { box-shadow: 0 12px 28px -14px rgba(55,48,163,.65); }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #e0e7ff;
+  }
+  .section-title { font-weight: 800; letter-spacing: -0.02em; }
+  .card {
+    background: #fff;
+    border: 1px solid #eef0f4;
+    border-radius: 1rem;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px -22px rgba(16,24,40,.18);
+    border-color: #dbdfe7;
+  }
+  .stage-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 0.9rem;
+    flex: none;
+  }
+  .stat-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
+    border: 1px solid #eef0f4;
+    border-radius: 1rem;
+  }
+  table.results { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.results th, table.results td {
+    padding: 0.55rem 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid #eef0f4;
+    white-space: nowrap;
+  }
+  table.results thead th {
+    background: #f7f8fa;
+    color: #262b3c;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  table.results tbody tr.method-ours { background: #eef2ff; }
+  table.results tbody tr.method-ours td { font-weight: 700; color: #312e81; }
+  table.results td.engine, table.results th.engine { text-align: left; font-weight: 600; color: #3a4156; }
+  table.results td.method, table.results th.method { text-align: left; color: #525a72; }
+  table.results td .delta { font-size: 0.68rem; font-weight: 600; margin-left: 0.15rem; vertical-align: baseline; }
+  table.results td .up { color: #059669; }
+  table.results td .down { color: #dc2626; }
+  .best { color: #3730a3; font-weight: 800; }
+  .secondbest { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  .copy-btn {
+    position: absolute;
+    z-index: 1;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    background: #262b3c;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background-color .15s ease;
+  }
+  .copy-btn:hover { background: #0b0e17; }
+  pre.bibtex {
+    background: #0b0e17;
+    color: #e0e7ff;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    position: relative;
+  }
+  .nav-link { color: #525a72; font-weight: 500; font-size: 0.92rem; transition: color .15s ease; }
+  .nav-link:hover { color: #3730a3; }
+  .fade-up { opacity: 0; transform: translateY(12px); animation: fadeUp .7s ease forwards; }
+  .fade-up.d1 { animation-delay: .08s; }
+  .fade-up.d2 { animation-delay: .16s; }
+  .fade-up.d3 { animation-delay: .24s; }
+  .fade-up.d4 { animation-delay: .32s; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+  .arrow-divider { display: flex; align-items: center; justify-content: center; color: #b6bccb; font-size: 1.4rem; }
+  @media (max-width: 768px) { .arrow-divider { transform: rotate(90deg); padding: 0.5rem 0; } }
+  .img-wrap { background: #fff; border: 1px solid #eef0f4; border-radius: 1rem; padding: 1rem; }
+  .eq { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+</style>
+</head>
+<body class="font-sans text-ink-700 bg-white">
+
+<!-- Top nav -->
+<nav class="sticky top-0 z-40 backdrop-blur bg-white/80 border-b border-ink-100">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2 font-bold text-ink-800">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+      <span>SourceLearn</span>
+    </a>
+    <div class="hidden md:flex items-center gap-7">
+      <a href="#abstract" class="nav-link">Abstract</a>
+      <a href="#problem" class="nav-link">Problem</a>
+      <a href="#framework" class="nav-link">Framework</a>
+      <a href="#results" class="nav-link">Results</a>
+      <a href="#analysis" class="nav-link">Analysis</a>
+      <a href="#bibtex" class="nav-link">BibTeX</a>
+    </div>
+    <a href="https://github.com/luchengfu6/SourceLearn" target="_blank" rel="noopener"
+       class="inline-flex items-center gap-2 text-sm font-semibold text-ink-700 hover:text-brand-700">
+      <i class="fa-brands fa-github text-base"></i>
+      <span class="hidden sm:inline">Code</span>
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header id="top" class="hero-bg">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-14 pb-12 sm:pt-20 sm:pb-16">
+    <div class="flex flex-wrap items-center gap-2 mb-5 fade-up">
+      <span class="chip"><i class="fa-solid fa-book-open text-[10px]"></i> Source Learning</span>
+      <span class="chip"><i class="fa-solid fa-robot text-[10px]"></i> LLM Agents</span>
+      <span class="chip"><i class="fa-solid fa-database text-[10px]"></i> Persistent Sources</span>
+    </div>
+
+    <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-ink-900 leading-[1.05] fade-up d1">
+      <span class="block text-ink-800">From Knowledge Access to</span>
+      <span class="block mt-2"><span class="gradient-text">Source Learning</span><span class="text-ink-800">:</span></span>
+      <span class="block text-ink-500 font-semibold text-2xl sm:text-3xl lg:text-4xl mt-3">Developing Source-Specific Competence</span>
+    </h1>
+
+    <div class="mt-8 sm:mt-10 fade-up d2">
+      <div class="text-ink-700 text-base sm:text-lg leading-relaxed">
+        <span class="font-semibold">Lucheng Fu</span><sup class="text-brand-700">1</sup>,
+        <span class="font-semibold">Kejing Xia</span><sup class="text-brand-700">1</sup>,
+        <span class="font-semibold">Yiyang Wang</span><sup class="text-brand-700">1</sup>,
+        <span class="font-semibold">Yiqiao Jin</span><sup class="text-brand-700">1</sup>,
+        <span class="font-semibold">Jinjin He</span><sup class="text-brand-700">1</sup>,
+        <span class="font-semibold">Xiyuan Yang</span><sup class="text-brand-700">2</sup>,
+        <span class="font-semibold">Haoxin Liu</span><sup class="text-brand-700">1</sup>,
+        <span class="font-semibold">Ye Yu</span><sup class="text-brand-700">2</sup>,
+        <span class="font-semibold">Haibo Jin</span><sup class="text-brand-700">2</sup>,
+        <span class="font-semibold">Yijia Xiao</span><sup class="text-brand-700">3</sup>,
+        <span class="font-semibold">Wenke Lee</span><sup class="text-brand-700">1</sup><sup class="text-accent-500">†</sup>,
+        <span class="font-semibold">B. Aditya Prakash</span><sup class="text-brand-700">1</sup><sup class="text-accent-500">†</sup>,
+        <span class="font-semibold">Haohan Wang</span><sup class="text-brand-700">2</sup><sup class="text-accent-500">†</sup>
+      </div>
+      <div class="mt-3 text-ink-500 text-sm sm:text-base">
+        <sup class="text-brand-700">1</sup> Georgia Institute of Technology &nbsp;&nbsp;
+        <sup class="text-brand-700">2</sup> University of Illinois at Urbana-Champaign &nbsp;&nbsp;
+        <sup class="text-brand-700">3</sup> University of California, Los Angeles
+      </div>
+      <div class="mt-1 text-ink-400 text-xs sm:text-sm">
+        <sup class="text-accent-500">†</sup> Corresponding authors
+      </div>
+      <div class="mt-1 text-ink-400 text-xs sm:text-sm">
+        Contact: <a href="mailto:luchengfu@gatech.edu" class="font-mono hover:text-ink-700">luchengfu@gatech.edu</a>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="mt-9 flex flex-wrap gap-3 fade-up d3">
+      <a href="https://arxiv.org/abs/2610.02150" target="_blank" rel="noopener" class="btn btn-primary">
+        <i class="fa-solid fa-file-lines"></i> arXiv
+      </a>
+      <a href="https://github.com/luchengfu6/SourceLearn" target="_blank" rel="noopener" class="btn btn-brand">
+        <i class="fa-brands fa-github"></i> Code
+      </a>
+      <a href="#bibtex" class="btn btn-secondary">
+        <i class="fa-solid fa-quote-right"></i> BibTeX
+      </a>
+    </div>
+
+    <!-- Headline metric strip -->
+    <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 fade-up d4">
+      <div class="stat-card p-4 sm:p-5">
+        <div class="text-2xl sm:text-3xl font-extrabold text-brand-700">13 / 15</div>
+        <div class="text-xs sm:text-sm text-ink-500 mt-1">best result in 13 of 15 benchmark &times; backbone settings</div>
+      </div>
+      <div class="stat-card p-4 sm:p-5">
+        <div class="flex items-baseline gap-1.5">
+          <span class="text-xs sm:text-sm font-semibold text-ink-400 uppercase tracking-wider">Up to</span>
+          <span class="text-2xl sm:text-3xl font-extrabold text-brand-700">+22.6</span>
+        </div>
+        <div class="text-xs sm:text-sm text-ink-500 mt-1">points over Hybrid RAG on the same source</div>
+      </div>
+      <div class="stat-card p-4 sm:p-5">
+        <div class="text-2xl sm:text-3xl font-extrabold text-brand-700">5</div>
+        <div class="text-xs sm:text-sm text-ink-500 mt-1">benchmarks: documents, stories, code, APIs, interactive apps</div>
+      </div>
+      <div class="stat-card p-4 sm:p-5">
+        <div class="text-2xl sm:text-3xl font-extrabold text-brand-700">3</div>
+        <div class="text-xs sm:text-sm text-ink-500 mt-1">LLM backbones, each running every stage of every method</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Abstract -->
+<section id="abstract" class="py-14 sm:py-20 bg-white">
+  <div class="max-w-5xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="chip">Abstract</span>
+      <div class="h-px flex-1 bg-ink-100"></div>
+    </div>
+    <p class="text-ink-700 text-base sm:text-lg leading-[1.8]">
+      Large language model (LLM) agents increasingly rely on persistent external sources to solve sequences of
+      knowledge-intensive tasks. Existing methods improve how source content is accessed and organized, while agent-memory
+      systems preserve reusable knowledge from prior interactions, but repeated use of the same source is still largely
+      treated as repeated access rather than an opportunity to progressively improve understanding of that source.
+      We study <em>source learning</em>: developing reusable <em>source-specific competence</em> over a persistent
+      authoritative source. We represent this competence with a persistent <em>source model</em> that captures reusable
+      understanding of the source, including how its knowledge is structured, interpreted, and applied. To construct and
+      progressively refine such models, we propose <strong>SourceLearn</strong>, which combines two complementary learning
+      mechanisms. <em>Self-Directed Source Learning</em> identifies what remains incompletely understood and adaptively
+      revisits the source, while <em>Task-Guided Source Learning</em> uses downstream experience to reveal local
+      representational gaps and recurring needs in how source knowledge should be organized. In both cases, learning
+      signals determine what should be reconsidered, while persistent updates are reconstructed from the authoritative
+      source. Across five benchmarks and three LLM backends, SourceLearn achieves the best performance in
+      <strong class="text-brand-700">13 of 15 settings</strong>, with gains of up to
+      <strong class="text-brand-700">22.6 points over Hybrid RAG</strong> and substantial overall improvements over static
+      source representations and experience-based memory baselines.
+    </p>
+  </div>
+</section>
+
+<!-- Problem -->
+<section id="problem" class="py-14 sm:py-20 bg-ink-50">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="chip">Problem</span>
+      <div class="h-px flex-1 bg-ink-100"></div>
+    </div>
+    <h2 class="section-title text-2xl sm:text-3xl text-ink-800 mb-3">Repeated access is not learning.</h2>
+    <p class="text-ink-600 max-w-3xl text-base sm:text-lg leading-relaxed mb-10">
+      A <em>source</em> is an identifiable body of external knowledge: a document collection, a code repository, API
+      documentation. Retrieval, long-context modeling and structured source representations make such sources easier to
+      access, and agent memory makes past experience easier to reuse, but they optimize different objects. When many
+      tasks depend on the same source, an additional opportunity arises: the agent can use prior study and task experience
+      to improve how it represents and uses that source. We call this process <strong>source learning</strong>; its goal is
+      <strong>source-specific competence</strong>, reusable understanding of how a source's knowledge is structured,
+      interpreted and applied, while the source itself remains the authority for factual content.
+    </p>
+
+    <div class="grid lg:grid-cols-5 gap-8 items-center">
+      <div class="lg:col-span-3 img-wrap">
+        <img src="media/introduction.png" alt="Knowledge access versus source learning" class="w-full h-auto rounded-lg" />
+        <p class="text-xs text-ink-500 mt-3 text-center">
+          <strong>Problem illustration.</strong> <span style="color:#bf9000;font-weight:600;">Knowledge access</span> retrieves task-relevant evidence from the source but does not necessarily accumulate reusable source understanding across tasks, so the model repeatedly reconstructs how evidence should be interpreted or combined (left).
+          <span style="color:#0e848c;font-weight:600;">Source learning</span> progressively develops reusable source understanding through continued study and use, while retaining direct access to the authoritative source (right).
+        </p>
+      </div>
+      <div class="lg:col-span-2 space-y-4">
+        <div class="card p-5">
+          <div class="flex items-center gap-2 text-ink-800 font-bold mb-1">
+            <i class="fa-solid fa-circle-question text-brand-700"></i> Challenge I
+          </div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            <em>What source knowledge should be learned before future tasks are known?</em> A source contains far more
+            than should be retained, and a one-pass representation may miss connections distributed across the source
+            or conditions that are only implicit.
+          </p>
+        </div>
+        <div class="card p-5">
+          <div class="flex items-center gap-2 text-ink-800 font-bold mb-1">
+            <i class="fa-solid fa-arrows-rotate text-brand-700"></i> Challenge II
+          </div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            <em>How can task-specific feedback improve source-specific competence beyond the task that produced it?</em>
+            Retaining the observed answer or correction risks learning the task rather than the source.
+          </p>
+        </div>
+        <div class="card p-5 bg-gradient-to-br from-brand-50 to-white border-brand-200">
+          <div class="flex items-center gap-2 text-brand-800 font-bold mb-1">
+            <i class="fa-solid fa-lightbulb"></i> The source model
+          </div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            An explicit, persistent and revisable state <span class="eq text-ink-800">M</span> of what has been learned
+            about the source. At task time it complements direct access:
+            <span class="eq text-ink-800">&ycirc; = F(q, R(D,q), M)</span>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Framework -->
+<section id="framework" class="py-14 sm:py-20 bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="chip">Framework</span>
+      <div class="h-px flex-1 bg-ink-100"></div>
+    </div>
+    <h2 class="section-title text-2xl sm:text-3xl text-ink-800 mb-3">SourceLearn: a source model that learns through study and use</h2>
+    <p class="text-ink-600 max-w-3xl text-base sm:text-lg leading-relaxed mb-10">
+      SourceLearn maintains a persistent source model over the authoritative source <span class="eq">D</span> and develops it in
+      three steps. Every stage follows one principle: <strong>learning signals determine what should be reconsidered,
+      while persistent knowledge is reconstructed from the source</strong>. A reconstruction is committed only when the
+      proposed content is supported by source evidence and previously supported meaning is preserved; observations
+      themselves are never copied into persistent memory.
+    </p>
+
+    <div class="img-wrap mb-12">
+      <img src="media/framework.png" alt="Overview of SourceLearn" class="w-full h-auto rounded-lg" />
+      <p class="text-xs text-ink-500 mt-3 text-center">
+        <strong>Overview of SourceLearn.</strong> <strong>Initial Construction</strong> builds a provisional source model <span class="eq">M<sub>0</sub></span> from the authoritative source <span class="eq">D</span>.
+        <strong><em>Self-Directed Source Learning</em></strong> deepens and connects source understanding through adaptive study, producing <span class="eq">M<sub>S</sub></span>.
+        <strong><em>Task-Guided Source Learning</em></strong> uses guidance-task failures and recurring representation needs to further refine the model into <span class="eq">M<sub>T</sub></span>.
+        At inference time, <strong>Source-Model Activation</strong> combines relevant source-model context with directly retrieved evidence for downstream tasks.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="card p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="stage-num">1</span>
+          <h3 class="font-bold text-ink-800">Source Model Construction</h3>
+        </div>
+        <p class="text-sm text-ink-600 leading-relaxed">
+          Source-aware, entity-centered reading under a generic modeling instruction <span class="eq">&Pi;<sub>0</sub></span>
+          builds a provisional model <span class="eq">M<sub>0</sub> = Construct(D)</span>: major entities with their
+          properties, mechanisms, governing conditions, procedures, exceptions, distinctions and relations, while easily
+          retrievable low-level details stay in the source. Large sources are first partitioned into coherent regions.
+        </p>
+      </div>
+      <div class="card p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="stage-num">2</span>
+          <h3 class="font-bold text-ink-800">Self-Directed Source Learning</h3>
+        </div>
+        <p class="text-sm text-ink-600 leading-relaxed">
+          An <em>Inspect&ndash;Study&ndash;Consolidate</em> cycle. Inspection rereads each entity against its current
+          representation and records what the model still fails to explain; an adaptive planner chooses
+          <span class="eq">Deepen</span> and <span class="eq">Connect</span> study actions with focused study questions;
+          consolidation reconstructs the affected regions from the source. A <em>read-many, write-once</em> pattern that
+          yields <span class="eq">M<sub>S</sub></span>.
+        </p>
+      </div>
+      <div class="card p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="stage-num">3</span>
+          <h3 class="font-bold text-ink-800">Task-Guided Source Learning</h3>
+        </div>
+        <p class="text-sm text-ink-600 leading-relaxed">
+          Guidance tasks reveal what the source model lacks. <em>Failure-guided local refinement</em> rereads the
+          implicated source region when a required claim is missing; <em>cross-task representation learning</em>
+          aggregates recurring representation lessons into a policy <span class="eq">&Pi;<sub>1</sub></span> and
+          recalibrates the whole model under it, producing <span class="eq">M<sub>T</sub></span>. Neither the answer nor
+          its evidence is stored.
+        </p>
+      </div>
+    </div>
+
+    <!-- Pipeline strip -->
+    <div class="mt-10 grid md:grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
+      <div class="card p-4 text-center">
+        <div class="text-xs uppercase tracking-wider text-ink-400 mb-1">Learning</div>
+        <div class="eq text-sm text-ink-800">D &nbsp;&rarr;&nbsp; M<sub>0</sub> &nbsp;&rarr;&nbsp; M<sub>S</sub> &nbsp;&rarr;&nbsp; M<sub>T</sub></div>
+        <div class="text-xs text-ink-500 mt-1">construction &middot; self-directed &middot; task-guided</div>
+      </div>
+      <div class="arrow-divider"><i class="fa-solid fa-arrow-right"></i></div>
+      <div class="card p-4 text-center bg-brand-50 border-brand-200">
+        <div class="text-xs uppercase tracking-wider text-brand-700 mb-1">Grounded reconstruction</div>
+        <div class="eq text-sm text-brand-900">Inspect &rarr; Reconstruct &rarr; GroundApply</div>
+        <div class="text-xs text-brand-700 mt-1">signals pick the region; the source writes the update</div>
+      </div>
+      <div class="arrow-divider"><i class="fa-solid fa-arrow-right"></i></div>
+      <div class="card p-4 text-center">
+        <div class="text-xs uppercase tracking-wider text-ink-400 mb-1">Task time</div>
+        <div class="eq text-sm text-ink-800">&ycirc; = F(q, R(D, q), A<sub>B</sub>(M, q))</div>
+        <div class="text-xs text-ink-500 mt-1">retrieved evidence + activated source model</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Results -->
+<section id="results" class="py-14 sm:py-20 bg-ink-50">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="chip">Results</span>
+      <div class="h-px flex-1 bg-ink-100"></div>
+    </div>
+    <h2 class="section-title text-2xl sm:text-3xl text-ink-800 mb-3">Consistent gains across source types and LLM backbones</h2>
+    <p class="text-ink-600 max-w-3xl text-base sm:text-lg leading-relaxed mb-8">
+      Five benchmarks spanning document QA (<strong>MultiDoc2Dial</strong>, <strong>NarrativeQA</strong>), code QA
+      (<strong>SWE-QA</strong>), tool use (<strong>APIBench</strong>) and interactive environments (<strong>AppWorld</strong>);
+      three backbones (<strong>GPT-5.6-Luna</strong>, <strong>gpt-oss-120b</strong>, <strong>DeepSeek-V4.1-Flash</strong>),
+      each performing every LLM operation of every method. Guidance and test tasks are disjoint. SourceLearn is compared
+      with task-local retrieval (Hybrid RAG), persistent source representations (RAPTOR, HippoRAG 2) and experience-based
+      memory (AWM), and receives the same retrieved evidence as Hybrid RAG together with the activated source model.
+    </p>
+
+    <!-- Highlight cards -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400 mb-1">GPT-5.6-Luna &middot; mean over 5 benchmarks</div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold text-brand-700">+14.3</span>
+          <span class="text-sm font-semibold text-emerald-600">vs Hybrid RAG</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400 mb-1">gpt-oss-120b &middot; mean over 5 benchmarks</div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold text-brand-700">+4.9</span>
+          <span class="text-sm font-semibold text-emerald-600">vs Hybrid RAG</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400 mb-1">DeepSeek-V4.1-Flash &middot; mean over 5 benchmarks</div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold text-brand-700">+13.4</span>
+          <span class="text-sm font-semibold text-emerald-600">vs Hybrid RAG</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400 mb-1">GPT-5.6-Luna &middot; APIBench</div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold text-brand-700">70.4</span>
+          <span class="text-sm font-semibold text-emerald-600">+22.6 vs Hybrid RAG</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main results table -->
+    <div class="card p-3 sm:p-5 overflow-x-auto">
+      <table class="results">
+        <thead>
+          <tr>
+            <th rowspan="2" class="engine">Backbone</th>
+            <th rowspan="2" class="method">Method</th>
+            <th colspan="2">Document QA</th>
+            <th>Code QA</th>
+            <th>Tool Use</th>
+            <th>Interactive Env.</th>
+          </tr>
+          <tr>
+            <th>MultiDoc2Dial</th><th>NarrativeQA</th>
+            <th>SWE-QA</th>
+            <th>APIBench</th>
+            <th>AppWorld</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- GPT-5.6-Luna -->
+          <tr><td class="engine" rowspan="5">GPT-5.6-Luna</td><td class="method">Hybrid RAG</td>
+              <td>64.9</td><td>66.0</td><td>56.9</td><td>47.8</td><td>72.0</td></tr>
+          <tr><td class="method">RAPTOR</td>
+              <td><span class="secondbest">71.2</span><span class="delta up">+6.3</span></td><td><span class="secondbest">68.1</span><span class="delta up">+2.1</span></td><td>50.8<span class="delta down">−6.1</span></td><td>61.9<span class="delta up">+14.1</span></td><td>75.6<span class="delta up">+3.6</span></td></tr>
+          <tr><td class="method">HippoRAG 2</td>
+              <td>66.3<span class="delta up">+1.4</span></td><td>66.6<span class="delta up">+0.6</span></td><td><span class="secondbest">62.7</span><span class="delta up">+5.8</span></td><td>55.2<span class="delta up">+7.4</span></td><td><span class="secondbest">77.4</span><span class="delta up">+5.4</span></td></tr>
+          <tr><td class="method">AWM</td>
+              <td>65.1<span class="delta up">+0.2</span></td><td>62.1<span class="delta down">−3.9</span></td><td>56.7<span class="delta down">−0.2</span></td><td><span class="secondbest">62.8</span><span class="delta up">+15.0</span></td><td>66.7<span class="delta down">−5.3</span></td></tr>
+          <tr class="method-ours"><td class="method">SourceLearn</td>
+              <td><span class="best">77.6</span><span class="delta up">+12.7</span></td><td><span class="best">80.2</span><span class="delta up">+14.2</span></td><td><span class="best">69.5</span><span class="delta up">+12.6</span></td><td><span class="best">70.4</span><span class="delta up">+22.6</span></td><td><span class="best">81.5</span><span class="delta up">+9.5</span></td></tr>
+
+          <!-- gpt-oss-120b -->
+          <tr><td class="engine" rowspan="5">gpt-oss-120b</td><td class="method">Hybrid RAG</td>
+              <td>64.5</td><td>45.6</td><td>52.5</td><td>60.3</td><td><span class="secondbest">30.4</span></td></tr>
+          <tr><td class="method">RAPTOR</td>
+              <td>61.5<span class="delta down">−3.0</span></td><td>40.4<span class="delta down">−5.2</span></td><td>32.8<span class="delta down">−19.7</span></td><td>54.7<span class="delta down">−5.6</span></td><td>26.8<span class="delta down">−3.6</span></td></tr>
+          <tr><td class="method">HippoRAG 2</td>
+              <td><span class="secondbest">66.7</span><span class="delta up">+2.2</span></td><td><span class="secondbest">45.7</span><span class="delta up">+0.1</span></td><td><span class="best">56.7</span><span class="delta up">+4.2</span></td><td>56.0<span class="delta down">−4.3</span></td><td><span class="best">33.9</span><span class="delta up">+3.5</span></td></tr>
+          <tr><td class="method">AWM</td>
+              <td>64.1<span class="delta down">−0.4</span></td><td>43.2<span class="delta down">−2.4</span></td><td>51.5<span class="delta down">−1.0</span></td><td><span class="secondbest">63.2</span><span class="delta up">+2.9</span></td><td>28.6<span class="delta down">−1.8</span></td></tr>
+          <tr class="method-ours"><td class="method">SourceLearn</td>
+              <td><span class="best">68.7</span><span class="delta up">+4.2</span></td><td><span class="best">56.7</span><span class="delta up">+11.1</span></td><td><span class="secondbest">53.4</span><span class="delta up">+0.9</span></td><td><span class="best">71.8</span><span class="delta up">+11.5</span></td><td>27.4<span class="delta down">−3.0</span></td></tr>
+
+          <!-- DeepSeek-V4.1-Flash -->
+          <tr><td class="engine" rowspan="5">DeepSeek-V4.1-Flash</td><td class="method">Hybrid RAG</td>
+              <td>63.3</td><td><span class="secondbest">64.2</span></td><td>45.9</td><td>67.1</td><td>83.9</td></tr>
+          <tr><td class="method">RAPTOR</td>
+              <td><span class="secondbest">73.2</span><span class="delta up">+9.9</span></td><td>60.4<span class="delta down">−3.8</span></td><td>36.8<span class="delta down">−9.1</span></td><td>69.3<span class="delta up">+2.2</span></td><td><span class="secondbest">88.7</span><span class="delta up">+4.8</span></td></tr>
+          <tr><td class="method">HippoRAG 2</td>
+              <td>67.3<span class="delta up">+4.0</span></td><td>62.0<span class="delta down">−2.2</span></td><td><span class="secondbest">55.7</span><span class="delta up">+9.8</span></td><td>69.6<span class="delta up">+2.5</span></td><td>86.9<span class="delta up">+3.0</span></td></tr>
+          <tr><td class="method">AWM</td>
+              <td>63.7<span class="delta up">+0.4</span></td><td>61.4<span class="delta down">−2.8</span></td><td>47.4<span class="delta up">+1.5</span></td><td><span class="secondbest">70.8</span><span class="delta up">+3.7</span></td><td>83.9<span class="delta up">+0.0</span></td></tr>
+          <tr class="method-ours"><td class="method">SourceLearn</td>
+              <td><span class="best">81.3</span><span class="delta up">+18.0</span></td><td><span class="best">76.2</span><span class="delta up">+12.0</span></td><td><span class="best">61.6</span><span class="delta up">+15.7</span></td><td><span class="best">82.2</span><span class="delta up">+15.1</span></td><td><span class="best">89.9</span><span class="delta up">+6.0</span></td></tr>
+        </tbody>
+      </table>
+      <p class="text-xs text-ink-500 mt-3">
+        Task performance (%) with changes relative to Hybrid RAG as subscripts. <span class="best">Bold</span>: best.
+        <span class="secondbest">Underlined</span>: second-best. QA answers are judged by GPT-5.6-Luna for every method and
+        backbone; APIBench and AppWorld use their official evaluators. The gains exceed 10 points on four of the five
+        benchmarks with both GPT-5.6-Luna and DeepSeek-V4.1-Flash.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Analysis -->
+<section id="analysis" class="py-14 sm:py-20 bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="chip">Analysis</span>
+      <div class="h-px flex-1 bg-ink-100"></div>
+    </div>
+    <h2 class="section-title text-2xl sm:text-3xl text-ink-800 mb-3">Both mechanisms matter, and the model is more than compression.</h2>
+    <p class="text-ink-600 max-w-3xl text-base sm:text-lg leading-relaxed mb-10">
+      Beyond headline accuracy, we ask <strong>what each learning mechanism contributes</strong> (ablation),
+      <strong>what the source model comes to represent</strong> (beyond compression), and
+      <strong>how it behaves when task-time retrieval is incomplete</strong> (robustness).
+    </p>
+
+    <!-- Ablation -->
+    <div class="grid lg:grid-cols-5 gap-8 items-center">
+      <div class="lg:col-span-3 img-wrap">
+        <img src="media/ablation.png" alt="Ablation of SourceLearn" class="w-full h-auto rounded-lg" />
+        <p class="text-xs text-ink-500 mt-3 text-center">
+          <strong>Ablation with GPT-5.6-Luna</strong> on two sources of each QA benchmark: the source learning stages (left) and the two pathways of Task-Guided Source Learning (right). Each bar reports answer accuracy (%).
+        </p>
+      </div>
+      <div class="lg:col-span-2 space-y-3">
+        <div class="card p-5">
+          <div class="text-ink-800 font-bold mb-1">The two learning mechanisms are complementary</div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            The full model <span class="eq">M<sub>T</sub></span> is the most accurate on all three benchmarks. Omitting either
+            Self-Directed or Task-Guided Source Learning lowers accuracy, and the initial model <span class="eq">M<sub>0</sub></span> is the lowest.
+          </p>
+        </div>
+        <div class="card p-5">
+          <div class="text-ink-800 font-bold mb-1">Two pathways, two kinds of information</div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            Removing either failure-guided local refinement or cross-task representation learning lowers accuracy on every
+            benchmark; removing both recovers <span class="eq">M<sub>S</sub></span> and lowers it further. Concrete failures repair
+            local gaps, while recurring representation lessons change how the whole model represents the source.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Beyond compression -->
+    <div class="mt-14">
+      <h3 class="font-bold text-xl text-ink-800 mb-2">Source learning beyond compression</h3>
+      <p class="text-ink-600 max-w-3xl text-sm sm:text-base leading-relaxed mb-6">
+        Is the source model merely a compressed summary of the source? From <span class="eq">M<sub>0</sub></span> to
+        <span class="eq">M<sub>S</sub></span> and <span class="eq">M<sub>T</sub></span>, the representation shifts away from
+        isolated look-up content toward structured rules and procedures, and units with explicit applicability conditions
+        rise from roughly <strong>30%</strong> to <strong>65&ndash;82%</strong> across sources. The share of source claims
+        required by test questions that the model represents rises from <strong>23.2%</strong> to <strong>40.0%</strong>, and
+        this coverage is associated with downstream success: accuracy rises from <strong>67.5%</strong> when none of the
+        required claims are represented to <strong>86.6%</strong> when all are.
+      </p>
+      <div class="img-wrap">
+        <img src="media/q3.png" alt="Source learning beyond compression" class="w-full h-auto rounded-lg" />
+        <p class="text-xs text-ink-500 mt-3 text-center">
+          From <span class="eq">M<sub>0</sub></span> to <span class="eq">M<sub>S</sub></span> to <span class="eq">M<sub>T</sub></span>, source learning (a) changes what the model represents, (b) makes conditions more explicit, (c) increases coverage of source knowledge required by future tasks, and (d) higher coverage is associated with higher answer accuracy.
+        </p>
+      </div>
+    </div>
+
+    <!-- Robustness + further analyses -->
+    <div class="mt-14 grid lg:grid-cols-5 gap-8 items-center">
+      <div class="lg:col-span-3 img-wrap">
+        <img src="media/degradation.png" alt="Robustness to missing retrieved evidence" class="w-full h-auto rounded-lg" />
+        <p class="text-xs text-ink-500 mt-3 text-center">
+          <strong>Robustness to missing retrieved evidence</strong> on MultiDoc2Dial with GPT-5.6-Luna. (a) Accuracy as the number of retrieved elements decreases; at <span class="eq">k = 0</span>, SourceLearn uses only the activated source model. (b) Accuracy when the gold document is removed from retrieval at <span class="eq">k = 8</span>.
+        </p>
+      </div>
+      <div class="lg:col-span-2 space-y-3">
+        <div class="card p-5">
+          <div class="text-ink-800 font-bold mb-1">Reusable understanding when retrieval fails</div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            With no retrieved evidence, the source model alone performs comparably to Hybrid RAG with all eight retrieved
+            elements, and SourceLearn degrades substantially more slowly as retrieval is reduced. Removing the gold document
+            lowers Hybrid RAG by about <strong>25</strong> points but SourceLearn by only about <strong>8</strong>.
+          </p>
+        </div>
+        <div class="card p-5">
+          <div class="text-ink-800 font-bold mb-1">Transfer beyond guidance-task regions</div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            Over Hybrid RAG, SourceLearn gains <strong>+14.9</strong> points on test questions whose source region overlaps a
+            guidance task and <strong>+12.1</strong> on regions no guidance task touched, so the benefit extends to new parts
+            of the same source.
+          </p>
+        </div>
+        <div class="card p-5">
+          <div class="text-ink-800 font-bold mb-1">Grounded, with the source kept authoritative</div>
+          <p class="text-sm text-ink-600 leading-relaxed">
+            Auditing sampled units against their cited evidence, direct contradictions remain rare (&le;1%) and
+            93&ndash;100% of claims dropped during rewriting remain represented; some task-guided units are only partially
+            supported, which is why the source stays directly accessible at task time.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BibTeX -->
+<section id="bibtex" class="py-14 sm:py-20 bg-ink-50">
+  <div class="max-w-5xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="chip">BibTeX</span>
+      <div class="h-px flex-1 bg-ink-100"></div>
+    </div>
+    <h2 class="section-title text-2xl sm:text-3xl text-ink-800 mb-5">If you find this work useful, please cite</h2>
+    <div class="relative">
+      <button class="copy-btn" id="copyBibBtn" type="button" aria-label="Copy BibTeX">
+        <i class="fa-regular fa-copy mr-1"></i><span id="copyBibText">Copy</span>
+      </button>
+<pre class="bibtex" id="bibtexBlock">@article{fu2026knowledge,
+  title={From Knowledge Access to Source Learning: Developing Source-Specific Competence},
+  author={Fu, Lucheng and Xia, Kejing and Wang, Yiyang and Jin, Yiqiao and He, Jinjin and Yang, Xiyuan and Liu, Haoxin and Yu, Ye and Jin, Haibo and Xiao, Yijia and others},
+  journal={arXiv preprint arXiv:2610.02150},
+  year={2026}
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-ink-100 bg-ink-50">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-5">
+      <img src="media/logo_gatech.png" alt="Georgia Tech" class="h-8 opacity-80" />
+      <img src="media/logo_uiuc.png" alt="UIUC" class="h-8 opacity-80" />
+      <img src="media/logo_ucla.png" alt="UCLA" class="h-8 opacity-80" />
+    </div>
+    <div class="text-sm text-ink-500 text-center md:text-right">
+      &copy; 2026 The SourceLearn Authors
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Copy BibTeX
+  document.getElementById('copyBibBtn').addEventListener('click', async () => {
+    const text = document.getElementById('bibtexBlock').innerText;
+    try {
+      await navigator.clipboard.writeText(text);
+      const label = document.getElementById('copyBibText');
+      const original = label.textContent;
+      label.textContent = 'Copied!';
+      setTimeout(() => { label.textContent = original; }, 1600);
+    } catch (e) {
+      const range = document.createRange();
+      range.selectNode(document.getElementById('bibtexBlock'));
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+    }
+  });
+</script>
+
+</body>
+</html>
